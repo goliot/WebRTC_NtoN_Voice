@@ -1,4 +1,5 @@
-var http = require("http");
+const https = require("https");
+const fs = require('fs');
 var express = require("express");
 var SocketIO = require("socket.io");
 var ejs = require("ejs");
@@ -14,9 +15,14 @@ app.use("/public", express.static(__dirname + "/public"));
 app.get('/', (req, res) => res.render("home"));
 app.get("/*", (req, res) => res.redirect("/"));
 
+const options = {
+    key : fs.readFileSync('./private.pem'),
+    cert: fs.readFileSync('./public.pem')
+}
+
 const handleListen = () => console.log(`listening on http://localhost:3000`);
-const httpServer = http.createServer(app);
-const wsServer = SocketIO(httpServer);
+const httpsServer = https.createServer(options,app);
+const wsServer = SocketIO(httpsServer);
 
 let receiverPCs = {};
 let senderPCs = {};
@@ -72,7 +78,7 @@ const createReceiverPeerConnection = (socketID, socket, roomID) => {
                 },
             ];
         }
-        socket.broadcast.to(roomID).emit("userEnter", { id: socketID });
+        socket.broadcast.to(roomID).emit("userEnter", { id: socketID , nickname: socket.nickName});
     };
 
     return pc;
@@ -117,14 +123,19 @@ const createSenderPeerConnection = (
 };
 
 const getOtherUsersInRoom = (socketID, roomID) => {
+    console.log (`get Other Users In Room > ${socketID}, ${roomID}`)
     let allUsers = [];
 
+    console.log(users);
     if (!users[roomID]) return allUsers;
 
     allUsers = users[roomID]
         .filter((user) => user.id !== socketID)
         .map((otherUser) => ({ id: otherUser.id }));
 
+    console.log(users);
+    console.log(allUsers);    
+    console.log(`users : ${users}, allUsers : ${allUsers}`)
     return allUsers;
 };
 
@@ -172,6 +183,7 @@ wsServer.on("connection", (socket) => {
     });
 
     socket.on("joinRoom",(data) => {
+        console.log(`joinRoom -> ${data.id, data.roomID}`);
         try {
             let allUsers = getOtherUsersInRoom(data.id, data.roomID)
             wsServer.to(data.id).emit("allUsers",{users: allUsers});
@@ -181,6 +193,7 @@ wsServer.on("connection", (socket) => {
     });
 
     socket.on("senderOffer",async (data) => {
+        console.log(data);
         try{
             socketToRoom[data.senderSocketID] = data.room;
             let pc = createReceiverPeerConnection(
@@ -197,11 +210,13 @@ wsServer.on("connection", (socket) => {
         await pc.setLocalDescription(sdp);
         socket.join(data.roomID);
         socket["nickname"] = data.nickName;
+        console.log(data.senderSocketID);
         wsServer.to(data.senderSocketID).emit("getSenderAnswer",{sdp});
         }catch(error) {
             console.log(error);
         }
     });
+
     socket.on("senderCandidate", async (data) => {
         try {
           let pc = receiverPCs[data.senderSocketID];
@@ -309,4 +324,4 @@ wss.on("connection",(socket)=>{
 })
  */
 
-httpServer.listen(port, handleListen);
+httpsServer.listen(port, handleListen);
