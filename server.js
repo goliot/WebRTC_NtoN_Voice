@@ -46,7 +46,7 @@ function isIncluded(array, id) {
     return array.some((item) => item.id === id);
 }
 
-const createReceiverPeerConnection = (socketID, socket, roomID) => {
+const createReceiverPeerConnection = (socketID, socket, roomID, socketNickName) => {
     const pc = new wrtc.RTCPeerConnection(pc_config);
     if (receiverPCs[socketID]) receiverPCs[socketID] = pc;
     else receiverPCs = { ...receiverPCs, [socketID]: pc };
@@ -78,7 +78,7 @@ const createReceiverPeerConnection = (socketID, socket, roomID) => {
                 },
             ];
         }
-        socket.broadcast.to(roomID).emit("userEnter", { id: socketID , nickname: socket.nickName});
+        socket.broadcast.to(roomID).emit("userEnter", { id: socketID , nickname: socketNickName});
     };
 
     return pc;
@@ -193,14 +193,17 @@ wsServer.on("connection", (socket) => {
     });
 
     socket.on("senderOffer",async (data) => {
+        console.log("senderoffer");
         console.log(data);
         try{
-            socketToRoom[data.senderSocketID] = data.room;
+            socketToRoom[data.senderSocketID] = data.roomID;
             let pc = createReceiverPeerConnection(
                 data.senderSocketID,
                 socket,
-                data.roomID
+                data.roomID,
+                data.nickName
             );
+            console.log(socketToRoom);
             
         await pc.setRemoteDescription(data.sdp);
         let sdp = await pc.createAnswer({
@@ -263,6 +266,7 @@ wsServer.on("connection", (socket) => {
       });
 
       socket.on("disconnect", () => {
+        console.log("socket Evnet : disconnect");
         try {
           let roomID = socketToRoom[socket.id];
     
@@ -270,6 +274,7 @@ wsServer.on("connection", (socket) => {
           closeReceiverPC(socket.id);
           closeSenderPCs(socket.id);
     
+          console.log(roomID);
           socket.broadcast.to(roomID).emit("userExit", { id: socket.id });
         } catch (error) {
           console.log(error);
@@ -289,7 +294,7 @@ wsServer.on("connection", (socket) => {
     });
     */
     socket.on("new_message", (data) => {
-        socket.to(data.room).emit("new_message", `${socket.nickname}: ${data.msg}`);
+        socket.to(data.roomID).emit("new_message", `${socket.nickname}: ${data.msg}`);
     });
 
     socket.on("nickname", (nickname) => socket["nickname"] = nickname);

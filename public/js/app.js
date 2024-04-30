@@ -97,6 +97,7 @@ const receivePCs = {};
 const users = [];
 
 const closeReceivePC = (id) => {
+  console.log("closeReceivePC!");
   if (!receivePCs[id]) return;
   receivePCs[id].close();
   delete receivePCs[id];
@@ -191,6 +192,7 @@ const createSenderOffer = async () => {
       sdp,
       senderSocketID: socketRef.id,
       roomID: roomName,
+      nickName : nickName,
     });
   } catch (error) {
     console.log(error);
@@ -256,7 +258,9 @@ async function getLocalStream() {
 };
 
 socketRef.on("userEnter", (data) => {
-  createReceivePC(data.id, data.nickName);
+  console.log("-----------userEnter00000000");
+  console.log(data);
+  createReceivePC(data.id, data.nickname);
 });
 
 socketRef.on("allUsers", (data) => {
@@ -265,8 +269,10 @@ socketRef.on("allUsers", (data) => {
 });
 
 socketRef.on("userExit", (data) => {
+  console.log("userExit");
   closeReceivePC(data.id);
-  users = users.filter((user) => user.id !== data.id);
+  let filteredUsers = users.filter((user) => user.id !== data.id);
+  users = filteredUsers;
 });
 
 socketRef.on("getSenderAnswer", async (data) => {
@@ -344,7 +350,7 @@ function paintPeerFace(peerStream, id, remoteNickname) {
 function sortStreams() {
   const streams = document.querySelector("#remote");
   const streamArr = streams.querySelectorAll("div");
-  streamArr.forEach((stream) => (stream.className = `people${peopleInRoom}`));
+  //streamArr.forEach((stream) => (stream.className = `people${peopleInRoom}`));
 }
 
 function updateVideoElement(videoElement, stream){
@@ -386,8 +392,12 @@ function handleRoomSubmit(event) {
 
 form.addEventListener("submit", handleRoomSubmit)
 
-window.addEventListener("beforeunload", () => {
-  if (socket) socket.disconnect();
-  if (sendPC) sendPC.close();
-  Object.values(receivePCs).forEach((pc) => pc.close());
-});
+window.onbeforeunload = async function(event){
+  event.preventDefault();
+  if(socketRef) await socketRef.disconnect();
+  if(sendPC) await sendPC.close();
+  for (const user of users) {
+    closeReceivePC(user.id);
+}
+window.close();
+}
