@@ -30,16 +30,11 @@ let users = {};
 let socketToRoom = {};
 
 const pc_config = {
-    iceServers: [
-        // {
-        //   urls: 'stun:[STUN_IP]:[PORT]',
-        //   'credentials': '[YOR CREDENTIALS]',
-        //   'username': '[USERNAME]'
-        // },
-        {
-            urls: "stun:stun.l.google.com:19302",
-        },
-    ],
+    'iceServers': [
+      {
+        "urls": ["turn:14.63.196.168:3478?transport=tcp"], "username":"testuser", "credential":"testpassword"
+    }
+  ]
 };
 
 function isIncluded(array, id) {
