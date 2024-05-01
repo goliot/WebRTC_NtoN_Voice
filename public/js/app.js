@@ -20,12 +20,16 @@ function showRoom() {
 }
 
 const pc_config = {
-  iceServers: [
+  'iceServers': [
     {
-      urls: "stun:stun.l.google.com:19302",
-    },
-  ],
+      //urls: "stun:stun.l.google.com:19302",
+      "urls": "turn:14.63.196.168:3478", 
+      "username":"testuser", 
+      "credential":"testpassword",
+  }
+]
 };
+
 
 const socketRef = io.connect();
 let roomName, nickName;
@@ -293,7 +297,7 @@ function paintPeerFace(peerStream, id, remoteNickname) {
   div.appendChild(video);
   streams.appendChild(div);
 
-  handleAudioStream(peerStream, id);
+  //handleAudioStream(peerStream, id);
 }
 
 function updateVideoElement(videoElement, stream){
@@ -357,7 +361,8 @@ function handleAudioStream(peerStream, id) {
     const average = dataArray.reduce((acc, val) => acc + val, 0) / bufferLength;
     const threshold = 10; // 임계값 설정
 
-    const greenMark = document.querySelector(`#${id} .greenMark`);
+    const div = document.getElementById(id);
+    const greenMark = document.querySelector(`h4`);
     if (greenMark) {
       greenMark.style.visibility = average > threshold ? "visible" : "hidden";
       if (greenMark.style.visibility === "visible") {
