@@ -63,6 +63,7 @@ const createReceiverPeerConnection = (socketID, socket, roomID, socketNickName) 
                 users[roomID].push({
                     id: socketID,
                     stream: e.streams[0],
+                    nickname : socketNickName,
                 });
             } else return;
         } else {
@@ -70,6 +71,7 @@ const createReceiverPeerConnection = (socketID, socket, roomID, socketNickName) 
                 {
                     id: socketID,
                     stream: e.streams[0],
+                    nickname : socketNickName,
                 },
             ];
         }
@@ -126,7 +128,7 @@ const getOtherUsersInRoom = (socketID, roomID) => {
 
     allUsers = users[roomID]
         .filter((user) => user.id !== socketID)
-        .map((otherUser) => ({ id: otherUser.id }));
+        .map((otherUser) => ({ id: otherUser.id, nickname: otherUser.nickname }));
 
     console.log(users);
     console.log(allUsers);    
@@ -181,6 +183,7 @@ wsServer.on("connection", (socket) => {
         console.log(`joinRoom -> ${data.id, data.roomID}`);
         try {
             let allUsers = getOtherUsersInRoom(data.id, data.roomID)
+            console.log("allUsers : ",allUsers);
             wsServer.to(data.id).emit("allUsers",{users: allUsers});
         }catch(error){
             console.log(error);
@@ -188,15 +191,13 @@ wsServer.on("connection", (socket) => {
     });
 
     socket.on("senderOffer",async (data) => {
-        console.log("senderoffer");
-        console.log(data);
         try{
             socketToRoom[data.senderSocketID] = data.roomID;
             let pc = createReceiverPeerConnection(
                 data.senderSocketID,
                 socket,
                 data.roomID,
-                data.nickName
+                data.nickname
             );
             console.log(socketToRoom);
             
@@ -207,7 +208,7 @@ wsServer.on("connection", (socket) => {
         });
         await pc.setLocalDescription(sdp);
         socket.join(data.roomID);
-        socket["nickname"] = data.nickName;
+        socket["nickname"] = data.nickname;
         console.log(data.senderSocketID);
         wsServer.to(data.senderSocketID).emit("getSenderAnswer",{sdp});
         }catch(error) {
@@ -276,52 +277,7 @@ wsServer.on("connection", (socket) => {
         }
       });
 
-      /*
-    socket.on("enter_room", (roomName, nickName, done) => {
-        try {
-            socket["nickname"] = nickName;
-            socket.join(roomName);
-            done();
-            socket.to(roomName).emit("welcome", socket.nickname);
-        } catch (e) {
-            console.log(e)
-        }
-    });
-    */
-    socket.on("new_message", (data) => {
-        socket.to(data.roomID).emit("new_message", `${socket.nickname}: ${data.msg}`);
-    });
-
     socket.on("nickname", (nickname) => socket["nickname"] = nickname);
 });
-
-/*
-server.listen(process.env.PORT || 3000, () => {
-    console.log("server running on 3000");
-  });
-  */
-
-/* 
-
-const wss = new WebSocket.Server({server});
-const sockets = [];
-wss.on("connection",(socket)=>{
-    sockets.push(socket);
-    socket["nickname"] = "no name"
-    console.log("Connected to Browser");
-    socket.on("close", () => console.log("Disconnected from the Browser"));
-    socket.on("message", (msg) => {
-        const message = JSON.parse(msg.toString('utf8'));
-        switch(message.type){
-            case "new_message":
-                sockets.forEach((aSocket) => aSocket.send(`${socket.nickname}: ${message.payload}`))
-                break;
-            case "nickname":
-                socket["nickname"] = message.payload;
-                break;
-        }
-    });
-})
- */
 
 httpsServer.listen(port, handleListen);
