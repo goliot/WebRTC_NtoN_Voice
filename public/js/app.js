@@ -5,6 +5,7 @@ const room = document.getElementById("room");
 const remoteDiv = document.querySelector(".remote");
 const localDiv = document.getElementById("local");
 const localVideoRef = document.getElementById("localVideo");
+const muteBtn = document.querySelector("#mute");
 room.hidden = true;
 userObjArr = []
 /*
@@ -92,6 +93,7 @@ const pc_config = {
 const socketRef = io.connect();
 let roomName, nickName;
 let localStream;
+let muted = true;
 let sendPC;
 const receivePCs = {};
 const users = [];
@@ -401,3 +403,19 @@ window.onbeforeunload = async function(event){
 }
 window.close();
 }
+
+
+function handleMuteClick() {
+  console.log("click");
+  localStream //
+    .getAudioTracks()
+    .forEach((track) => (track.enabled = !track.enabled));
+  if (muted) { //이미 뮤트
+    muteBtn.textContent = "Mute";
+    muted = false;
+  } else { 
+    muteBtn.textContent = "UnMute";
+    muted = true;
+  }
+}
+muteBtn.addEventListener("click", handleMuteClick);
