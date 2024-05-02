@@ -297,7 +297,7 @@ function paintPeerFace(peerStream, id, remoteNickname) {
   div.appendChild(video);
   streams.appendChild(div);
 
-  //handleAudioStream(peerStream, id);
+  handleAudioStream(peerStream, id);
 }
 
 function updateVideoElement(videoElement, stream){
